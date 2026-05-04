@@ -42,7 +42,31 @@ In the clearAll method and the hydration hook, you’ll notice we call .set() on
 
 Do you want to see how to use the resource API (another v22 feature) to handle the localStorage loading as an asynchronous data fetch?
 
+In Angular v22, ngOnInit is largely considered a "legacy" pattern for signal-based components. While it still works, it is being phased out in favor of the Constructor and Signals, and here is why:
+## 1. The Timing of Signals
+Signals are ready the moment the class is instantiated. In older versions of Angular, you needed ngOnInit because @Input() values weren't available in the constructor. With the new input() and model() signals (like the one in your Counter component), values are available earlier and are reactive from the start.
+## 2. Side-Effects vs. Lifecycle Hooks
+In the past, ngOnInit was where you set up subscriptions or initial logic. In v22:
 
+* Logic belongs in the Signal Graph (linkedSignal, computed).
+* Side-effects belong in Effects (effect, afterRenderEffect).
+These primitives manage their own lifecycles. They start when the component starts and stop when it’s destroyed, meaning you don't need to manually trigger them inside a "hook" like ngOnInit.
+
+## 3. SSR and Hydration Compatibility
+ngOnInit runs on both the server and the client.
+
+* If you put localStorage logic in ngOnInit, your app will crash on the server because localStorage is missing.
+* afterNextRender and afterRenderEffect are explicitly designed to be "browser-only." By using these instead of ngOnInit, you are following the modern standard for making apps SSR-safe without needing if (isPlatformBrowser) checks everywhere.
+
+## 4. Code Co-location
+Using ngOnInit forces you to split your logic. You declare a variable at the top, then initialize it 50 lines down in the hook.
+
+* In your v22 code, everything is declarative. The highScore definition contains its own logic, and the persistence effect is set up right next to it. This makes the code easier to read and maintain.
+
+## Summary
+In v22, you use the Constructor to set up the "rules" (Signals/Effects) and Render Hooks to handle the browser-specific "data" (LocalStorage). ngOnInit is an unnecessary middle-man in this reactive flow.
+
+Would you like to see how to convert a traditional @Input() component into a signal-based one that avoids ngOnChanges as well?
 
 ## Development server
 
