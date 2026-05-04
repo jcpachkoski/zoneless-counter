@@ -68,6 +68,23 @@ In v22, you use the Constructor to set up the "rules" (Signals/Effects) and Rend
 
 Would you like to see how to convert a traditional @Input() component into a signal-based one that avoids ngOnChanges as well?
 
+In modern Angular (v19+ and v22), the paradigm is shifting from imperative hooks (Angular calling you) to declarative signals (you defining the data flow). [1, 2] 
+Here is how the traditional lifecycle hooks map to the new Signal-based world:
+
+| Legacy Hook [3, 4, 5, 6, 7] | Signal-based Replacement | Why it's better |
+|---|---|---|
+| ngOnInit | Constructor / Initializers | Signals like input() and model() are available earlier. Logic is defined where the variable is declared. |
+| ngOnChanges | computed() / effect() | Instead of a giant if/else block checking property names, signals automatically track and react to specific changes. |
+| ngDoCheck | Internal Signal Tracking | You no longer need to manually tell Angular to check for changes; the Signal Graph handles "glitch-free" updates automatically. |
+| ngAfterViewInit | viewChild() / afterNextRender | viewChild returns a signal that updates when the view is ready. afterNextRender is more precise for SSR-safe browser logic. |
+| ngAfterContentInit | contentChild() | Content queries are now signals, making them reactive and easier to compose with other data. |
+| ngOnDestroy | onCleanup() / DestroyRef | You can register cleanup logic directly inside an effect or use inject(DestroyRef) anywhere (not just in the class body). |
+| ngAfterViewChecked | afterRenderEffect() | Specifically designed for logic that must happen after the DOM is updated, replacing the brittle "checked" hooks. |
+
+## Key Takeaway
+The biggest shift is from Events to State. In the old way, you waited for an event (like "Init") to run code. In the v22 way, you define how your state (Signals) relates to other state, and Angular ensures the UI and storage stay in sync automatically. [8] 
+Would you like to see how to use onCleanup inside an effect to handle things like canceling an API call or a timer?
+
 ## Development server
 
 To start a local development server, run:
