@@ -1,4 +1,4 @@
-import { Component, signal, effect, afterNextRender, linkedSignal } from '@angular/core';
+import { Component, signal, linkedSignal, afterNextRender, afterRenderEffect } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Counter } from './counter/counter';
 
@@ -84,12 +84,8 @@ import { Counter } from './counter/counter';
   `
 })
 export class App {
-  // 1. Primary state
   score = signal(0);
 
-  // 2. Declarative High Score (v22 standard)
-  // Explicitly define <SourceType, OutputType>
-  // Explicit typing prevents the "implicitly has any" error
   highScore = linkedSignal<number, number>({
     source: this.score,
     computation: (current: number, previous?: { source: number; value: number }) => {
@@ -99,27 +95,26 @@ export class App {
   });
 
   constructor() {
-    // 3. Persistent Side Effect
-    // Only handes writing to localStorage.
-    // I added SSR to this project when it was built by the Angular CLI.
-    // SSR-safe because effects don't run during server rendering.
-    effect(() => {
-      localStorage.setItem('score', this.score().toString());
-      localStorage.setItem('high', this.highScore().toString());
+    /**
+     * 1. Hydration (Initial Load)
+     * Replaces isPlatformBrowser by only executing in the browser 
+     * after the first render is complete.
+     * This is used strictly for the initial data pull.
+     */
+    afterNextRender(() => {
+      this.score.set(Number(localStorage.getItem('score') ?? 0));
+      this.highScore.set(Number(localStorage.getItem('high') ?? 0));
     });
 
-    // 4. Hydration: Only runs in the browser.
-    // Reads from localStorage after the first render,
-    // then sets both signals together to avoid multiple effect runs.
-    afterNextRender(() => {
-      const savedScore = Number(localStorage.getItem('score') ?? 0);
-      const savedHighScore = Number(localStorage.getItem('high') ?? 0);
-      
-      // Updating multiple signals in a single synchronous block allows Angular
-      // to batch the updates. This means the UI only re-renders once for the
-      // initial load rather than twice.
-      this.score.set(savedScore);
-      this.highScore.set(savedHighScore);
+    /**
+     * 2. Persistence (The v22 way)
+     * afterRenderEffect is safer than effect() for SSR because it 
+     * automatically skips server-side execution and only runs 
+     * once the DOM is stable.
+     */
+    afterRenderEffect(() => {
+      localStorage.setItem('score', this.score().toString());
+      localStorage.setItem('high', this.highScore().toString());
     });
   }
 
